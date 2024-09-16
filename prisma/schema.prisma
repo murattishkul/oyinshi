@@ -13,9 +13,31 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
-  password String
+
+model Game {
+  id Int @id @default(autoincrement())
+  chatId BigInt
+  arena Arena @relation(fields: [arenaId], references: [id])
+  arenaId Int
+  time String
+  date String
+  maxAllowedPlayers Int
+  price Int
+  players Player[]
+}
+
+model Player {
+  id Int @id @default(autoincrement())
+  game Game @relation(fields: [gameId], references: [id])
+  gameId Int
+
+  tgId Int
+  tgFirstName String
+  tgUserName String
+}
+
+model Arena {
+  id Int @id @default(autoincrement())
+  name String
+  games Game[]
 }
