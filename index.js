@@ -157,9 +157,10 @@ const addPlayer = (userData) => {
   playerList.push(userData);
 };
 
-bot.on("callback_query", (query) => {
+bot.on("callback_query", async (query) => {
   const chatId = query.message.chat.id;
   const data = query.data;
+  const sobesednik = query.from;
   // console.log(query);
 
   if (data === "arena") {
@@ -197,7 +198,8 @@ bot.on("callback_query", (query) => {
                   time,
                   arena: { connect: { id: newArena.id } },
                   price: +price,
-                  maxAllowedPlayers: +playersNumber
+                  maxAllowedPlayers: +playersNumber,
+                  active: true
                 }
               })
               console.log('=========================',newArena, newGame);
@@ -215,7 +217,35 @@ bot.on("callback_query", (query) => {
 
   if (data === "in") {
     const userData = getUserData(query, chatId);
+    console.log('====',query, '====')
+    // find active game
+    let currentGame = await prisma.game.findFirst({
+      where: {
+          active: true,
+          chatId: chatId
+      }
+    });
+    console.log(currentGame)
+    if(!currentGame) return
     // create player and add it to a game
+    let player = await prisma.player.findFirst({
+      where: {
+        tgId: sobesednik.id 
+      }
+    })
+    console.log(player)
+    if (!player) {
+      player = await prisma.player.create({
+        data: {
+          game: { connect: { id: currentGame.id } },
+          chatIds: [chatId],
+  
+          tgId: sobesednik.id,
+          tgFirstName: sobesednik.first_name,
+          tgUserName: sobesednik.username
+      }})
+    }
+    console.log(player)    
     addPlayer(userData);
     bot.sendMessage(chatId, getListOfPlayers());
   }

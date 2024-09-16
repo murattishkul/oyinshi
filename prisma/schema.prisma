@@ -24,12 +24,14 @@ model Game {
   maxAllowedPlayers Int
   price Int
   players Player[]
+  active Boolean @default(false)
 }
 
 model Player {
   id Int @id @default(autoincrement())
   game Game @relation(fields: [gameId], references: [id])
   gameId Int
+  chatIds BigInt[]
 
   tgId Int
   tgFirstName String
