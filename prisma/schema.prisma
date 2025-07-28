@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,33 +10,79 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Admin {
+  id         Int      @id @default(autoincrement())
+  telegramId String   @unique
+  username   String?
+  firstName  String?
+  lastName   String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  games Game[]
+
+  @@map("admins")
+}
 
 model Game {
-  id Int @id @default(autoincrement())
-  chatId BigInt
-  arena Arena @relation(fields: [arenaId], references: [id])
-  arenaId Int
-  time String
-  date String
-  maxAllowedPlayers Int
-  price Int
-  players Player[]
-  active Boolean @default(false)
+  id           Int        @id @default(autoincrement())
+  adminId      Int
+  groupId      String // This stores the Telegram group ID
+  date         DateTime
+  playersCount Int
+  location     String
+  status       GameStatus @default(ACTIVE)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  admin        Admin         @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  participants Participant[]
+  group        Group         @relation(fields: [groupId], references: [telegramId])
+
+  @@map("games")
 }
 
-model Player {
-  id Int @id @default(autoincrement())
-  game Game @relation(fields: [gameId], references: [id])
-  gameId Int
-  chatIds BigInt[]
+model Participant {
+  id         Int               @id @default(autoincrement())
+  gameId     Int
+  telegramId String
+  username   String?
+  firstName  String?
+  lastName   String?
+  status     ParticipantStatus @default(GOING)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
 
-  tgId Int
-  tgFirstName String
-  tgUserName String
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  // Ensure one user can only participate once per game
+  @@unique([gameId, telegramId])
+  @@map("participants")
 }
 
-model Arena {
-  id Int @id @default(autoincrement())
-  name String
+model Group {
+  id         Int      @id @default(autoincrement())
+  telegramId String   @unique
+  title      String
+  type       String // "group", "supergroup", "channel"
+  username   String? // Group username if it has one (e.g., @myfootballgroup)
+  isActive   Boolean  @default(true)
+  addedAt    DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
   games Game[]
+
+  @@map("groups")
+}
+
+enum GameStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum ParticipantStatus {
+  GOING
+  NOT_GOING
+  MAYBE
 }

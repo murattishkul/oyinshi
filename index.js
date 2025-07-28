@@ -3,7 +3,10 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const path = require("path");
 const dotenv = require("dotenv");
-const prisma = require("./db/prisma");
+const {handleAdminScenario} = require("./src/scenarios/admin");
+const {handleGroupScenario} = require("./src/scenarios/group");
+const {handleBotStatusChange, setupBotHandlers} = require("./src/scenarios/init");
+const {createAdminOnPrivateChat} = require("./src/scenarios/admin/controllers/create-admin");
 
 dotenv.config({ path: path.resolve(__dirname, ".", ".env") });
 
@@ -38,44 +41,20 @@ app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
 
-const inlineKeyboard = [
-  [{ text: "Введите название арены", callback_data: "arena" }],
-  [{ text: "Введите дату", callback_data: "date" }],
-  [{ text: "Введите время", callback_data: "time" }],
-  [{ text: "Введите кол-во игроков", callback_data: "playersNumber" }],
-  [{ text: "Цена аренды поля?", callback_data: "price" }]
-];
-
-const options = {
-  reply_markup: {
-    inline_keyboard: inlineKeyboard,
-  },
-};
-
 // Слушаем сообщения
 bot.on("message", async (msg) => {
-  const chatId = msg.chat.id;
-  const messageText = msg.text;
+	try {
+		await handleMessage(bot, msg);
+		
+	} catch (error) {
+		console.error('Error handling message:', error);
+		await bot.sendMessage(msg.chat.id, "❌ Произошла ошибка. Попробуйте позже.");
+	}
+});
 
-  if (msg.chat.type !== "group" && msg.chat.type !== "supergroup") {
-    bot.sendMessage(chatId, "Используйте меня в группе");
-    return;
-  }
-  try {
-    const botInfo = await bot.getMe();
-    const chatMember = await bot.getChatMember(chatId, botInfo.id)
-
-    if (chatMember.status !== "administrator" && chatMember.status !== "creator") {
-      bot.sendMessage(chatId, "Сделайте меня администратором группы");
-      return;
-    } 
-    if (messageText == "/football") {
-      bot.sendMessage(chatId, "Выберите опцию:", options);
-    }
-  } catch (error) {
-    console.error("Ошибка при получении информации о члене группы:", error);
-    bot.sendMessage(chatId, "Используйте меня в группе");
-  }
+// Обработка изменений статуса бота
+bot.on('my_chat_member', async (update) => {
+	await handleBotStatusChange(bot, update);
 });
 
 // Обработка команды /start
@@ -84,169 +63,28 @@ bot.onText(/\/start/, (msg) => {
   bot.sendMessage(chatId, "Привет! Я ваш новый Telegram-бот.");
 });
 
-const getUserAvatar = (userId, chatId) => {
-  bot.getUserProfilePhotos(userId).then((photos) => {
-    if (photos.total_count > 0) {
-      const photoFileId = photos.photos[0][0].file_id;
+setupBotHandlers(bot);
 
-      return bot.getFileLink(photoFileId).then((fileLink) => {
-        // Send the profile photo link or use it as needed
-        bot.sendMessage(chatId, `Profile Photo Link: ${fileLink}`);
-        return fileLink;
-      });
-    } else {
-      bot.sendMessage(chatId, "No profile photo found.");
-      return "";
-    }
-  });
+// Основной обработчик сообщений
+const handleMessage = async (bot, msg) => {
+	const chatId = msg.chat.id;
+	const userId = msg.from.id;
+	const text = msg.text;
+	const username = msg.from.username;
+	const firstName = msg.from.first_name;
+	const lastName = msg.from.last_name;
+	
+	// Проверяем тип чата
+	if (msg.chat.type === 'private') {
+		// ЛИЧНЫЙ ЧАТ - создаем/обновляем админа
+		await createAdminOnPrivateChat(userId, username, firstName, lastName);
+		
+		// Обрабатываем как админский сценарий
+		await handleAdminScenario(bot, chatId, userId, text, username, msg);
+		
+	} else if (['group', 'supergroup'].includes(msg.chat.type)) {
+		// ГРУППОВОЙ ЧАТ - НЕ создаем админов, только обрабатываем игровую логику
+		// Здесь можно обрабатывать реакции на опросы игр
+		await handleGroupScenario(bot, msg);
+	}
 };
-
-const choiceOptions = {
-  reply_markup: {
-    inline_keyboard: [
-      [{ text: "+", callback_data: "in" }],
-      [{ text: "-", callback_data: "pass" }],
-      [{ text: "+1", callback_data: "plusOne" }],
-    ],
-  },
-};
-
-let gameData = {
-  arena: "",
-  date: "",
-  time: "",
-  playersNumber: 0,
-};
-
-/*
- * {firstName,}
- */
-const playerList = [];
-
-const displayPlayerList = () => {
-  let list = "";
-  let count = 1;
-  playerList.forEach((player) => {
-    const displayName = player.firstName;
-    list = `${list}\n${count}. ${displayName}`;
-    count++;
-  });
-  return list;
-};
-
-const getListOfPlayers = () => {
-  const { arena, date, time } = gameData;
-  return `
-    ${arena} ${date} ${time}
-    \n
-    ${displayPlayerList()}
-  `;
-};
-
-const getUserData = (query, chatId) => {
-  return {
-    userId: query.from.id,
-    userName: query.from.username || "Unknown",
-    firstName: query.from.first_name || "Unknown",
-    lastName: query.from.last_name || "",
-    photoLink: getUserAvatar(query.from.id, chatId),
-  };
-};
-
-const addPlayer = (userData) => {
-  playerList.push(userData);
-};
-
-bot.on("callback_query", async (query) => {
-  const chatId = query.message.chat.id;
-  const data = query.data;
-  const sobesednik = query.from;
-  // console.log(query);
-
-  if (data === "arena") {
-    bot.sendMessage(chatId, "Где катаем?:");
-    bot.once("message", (msg) => {
-      const arenaName = msg.text;
-      bot.sendMessage(chatId, "В какой день катаем?:");
-      bot.once("message", (msg) => {
-        const date = msg.text;
-        bot.sendMessage(chatId, "Во сколько?:");
-        bot.once("message", (msg) => {
-          const time = msg.text;
-          bot.sendMessage(chatId, "Сколько человек набрать?");
-          bot.once("message", async (msg) => {
-            const playersNumber = msg.text;
-            // create game
-            bot.sendMessage(chatId, "Цена аренды поля?");
-            bot.once("message", async (msg) => {
-              const price = msg.text;
-              gameData = {
-                date,
-                time,
-                playersNumber,
-                arena: arenaName,
-              };
-              const newArena = await prisma.arena.create({
-                data: {
-                  name: arenaName
-                }
-              });
-              const newGame = await prisma.game.create({
-                data: {
-                  chatId,
-                  date,
-                  time,
-                  arena: { connect: { id: newArena.id } },
-                  price: +price,
-                  maxAllowedPlayers: +playersNumber,
-                  active: true
-                }
-              })
-              console.log('=========================',newArena, newGame);
-              bot.sendMessage(
-                chatId,
-                `${arenaName} ${date} ${time} ${playersNumber}`,
-                choiceOptions
-              );
-            })
-          });
-        });
-      });
-    });
-  }
-
-  if (data === "in") {
-    const userData = getUserData(query, chatId);
-    console.log('====',query, '====')
-    // find active game
-    let currentGame = await prisma.game.findFirst({
-      where: {
-          active: true,
-          chatId: chatId
-      }
-    });
-    console.log(currentGame)
-    if(!currentGame) return
-    // create player and add it to a game
-    let player = await prisma.player.findFirst({
-      where: {
-        tgId: sobesednik.id 
-      }
-    })
-    console.log(player)
-    if (!player) {
-      player = await prisma.player.create({
-        data: {
-          game: { connect: { id: currentGame.id } },
-          chatIds: [chatId],
-  
-          tgId: sobesednik.id,
-          tgFirstName: sobesednik.first_name,
-          tgUserName: sobesednik.username
-      }})
-    }
-    console.log(player)    
-    addPlayer(userData);
-    bot.sendMessage(chatId, getListOfPlayers());
-  }
-});
