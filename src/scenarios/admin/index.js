@@ -343,7 +343,7 @@ async function showMainMenu(bot, chatId) {
 	};
 	
 	await bot.sendMessage(chatId,
-		"⚽ Добро пожаловать в Football Bot!\n\n" +
+		"⚽ Добро пожаловать в Oyinshi Bot!\n\n" +
 		"Выберите действие:",
 		{ reply_markup: keyboard }
 	);
@@ -657,7 +657,7 @@ async function showUserGames(bot, chatId, userId) {
 
 async function showHelp(bot, chatId) {
 	const helpText =
-		"🤖 Помощь по Football Bot\n\n" +
+		"🤖 Помощь по Oyinshi Bot\n\n" +
 		"📋 Доступные команды:\n" +
 		"/start - Главное меню\n" +
 		"/create_game - Создать новую игру\n" +
