@@ -18,7 +18,7 @@ const handleAdminScenario = async (bot, chatId, userId, text, username, msg) => 
 	
 	switch (currentState) {
 		case ADMIN_STATES.IDLE:
-			await handleIdleState(bot, chatId, userId, text);
+			await handleIdleState(bot, chatId, userId, text, msg);
 			break;
 		
 		case ADMIN_STATES.SELECTING_GROUP:
@@ -39,7 +39,7 @@ const handleAdminScenario = async (bot, chatId, userId, text, username, msg) => 
 	}
 }
 
-async function handleIdleState(bot, chatId, userId, text) {
+async function handleIdleState(bot, chatId, userId, text, msg) {
 	switch (text) {
 		case '/start':
 			await showMainMenu(bot, chatId);
@@ -48,7 +48,7 @@ async function handleIdleState(bot, chatId, userId, text) {
 		case '/create_game':
 			userStates.set(userId, ADMIN_STATES.SELECTING_GROUP);
 			gameData.set(userId, {});
-			await showGroupSelection(bot, chatId, userId);
+			await handleGroupSelection(bot, chatId, userId, text, msg);
 			break;
 		
 		case '/my_games':
@@ -96,8 +96,8 @@ async function handleGroupSelection(bot, chatId, userId, text, msg) {
 	if (!selectedGroup) {
 		return bot.sendMessage(chatId,
 			"❌ Неверный выбор.\n\n" +
-			"Введите номер группы из списка (например: 1) или корректный ID группы.\n\n" +
-			"Для просмотра списка групп снова используйте /create_game"
+			"💡 Введите номер группы из списка (например: 1)\n" +
+			"🔄 Для обновления списка используйте /create_game"
 		);
 	}
 	
@@ -107,7 +107,6 @@ async function handleGroupSelection(bot, chatId, userId, text, msg) {
 		const chatMember = await bot.getChatMember(selectedGroup.telegramId, botInfo.id);
 		
 		if (chatMember.status !== 'administrator') {
-			// Обновляем статус группы в БД
 			await prisma.group.update({
 				where: { telegramId: selectedGroup.telegramId },
 				data: { isActive: false }
@@ -115,40 +114,39 @@ async function handleGroupSelection(bot, chatId, userId, text, msg) {
 			
 			return bot.sendMessage(chatId,
 				`❌ Бот больше не является администратором в группе "${selectedGroup.title}".\n\n` +
-				"Проверьте права бота и попробуйте снова.\n\n" +
-				"Используйте /create_game для обновления списка групп."
+				"🔧 Проверьте права бота и попробуйте снова.\n" +
+				"🔄 Используйте /create_game для обновления списка групп."
 			);
 		}
 		
-		// Проверяем, что пользователь все еще является участником группы
+		// Проверяем участие пользователя в группе
 		try {
 			const userMember = await bot.getChatMember(selectedGroup.telegramId, userId);
 			if (['left', 'kicked'].includes(userMember.status)) {
 				return bot.sendMessage(chatId,
 					`❌ Вы больше не являетесь участником группы "${selectedGroup.title}".\n\n` +
-					"Присоединитесь к группе и попробуйте снова."
+					"👥 Присоединитесь к группе и попробуйте снова."
 				);
 			}
 		} catch (error) {
-			console.error('Error checking user membership:', error);
 			return bot.sendMessage(chatId,
 				`❌ Не удалось проверить ваше участие в группе "${selectedGroup.title}".\n\n` +
-				"Убедитесь, что вы являетесь участником группы."
+				"👥 Убедитесь, что вы являетесь участником группы."
 			);
 		}
 		
 		// Сохраняем выбранную группу
 		currentGame.groupId = selectedGroup.telegramId;
 		currentGame.groupName = selectedGroup.title;
-		delete currentGame.availableGroups; // Очищаем временный список
+		delete currentGame.availableGroups;
 		gameData.set(userId, currentGame);
 		
 		userStates.set(userId, ADMIN_STATES.COLLECTING_METADATA);
 		
 		await bot.sendMessage(chatId,
-			`✅ Группа выбрана: **${selectedGroup.title}**\n\n` +
-			"Переходим к настройке игры...",
-			{ parse_mode: 'Markdown' }
+			`✅ Группа выбрана: <b>${selectedGroup.title}</b>\n\n` +
+			"⚙️ Переходим к настройке игры...",
+			{ parse_mode: 'HTML' }
 		);
 		
 		await startMetadataCollection(bot, chatId, userId);
@@ -161,7 +159,6 @@ async function handleGroupSelection(bot, chatId, userId, text, msg) {
 
 async function loadAndShowAvailableGroups(bot, chatId, userId) {
 	try {
-		// Получаем все активные группы из БД
 		const dbGroups = await prisma.group.findMany({
 			where: { isActive: true },
 			orderBy: { title: 'asc' }
@@ -171,32 +168,31 @@ async function loadAndShowAvailableGroups(bot, chatId, userId) {
 			userStates.set(userId, ADMIN_STATES.IDLE);
 			gameData.delete(userId);
 			return bot.sendMessage(chatId,
-				"❌ Нет доступных групп.\n\n" +
-				"Добавьте бота в группу как администратора, и группа появится в списке автоматически.\n\n" +
-				"Инструкция:\n" +
-				"1. Добавьте бота в нужную группу\n" +
-				"2. Сделайте бота администратором группы\n" +
-				"3. Попробуйте создать игру снова"
+				"❌ <b>Нет доступных групп</b>\n\n" +
+				"🤖 Добавьте бота в группу как администратора:\n" +
+				"1️⃣ Добавьте бота в нужную группу\n" +
+				"2️⃣ Сделайте бота администратором\n" +
+				"3️⃣ Попробуйте создать игру снова\n\n" +
+				"📱 Группа появится в списке автоматически!",
+				{ parse_mode: 'HTML' }
 			);
 		}
 		
-		// Фильтруем группы, где пользователь является участником
+		// Фильтруем группы где пользователь является участником
 		const availableGroups = [];
+		let processingMessage = await bot.sendMessage(chatId, "🔄 Проверяем доступные группы...");
 		
 		for (const group of dbGroups) {
 			try {
-				// Проверяем, является ли пользователь участником группы
 				const userMember = await bot.getChatMember(group.telegramId, userId);
 				
 				if (!['left', 'kicked'].includes(userMember.status)) {
-					// Также проверяем, что бот все еще админ
 					const botInfo = await bot.getMe();
 					const botMember = await bot.getChatMember(group.telegramId, botInfo.id);
 					
 					if (botMember.status === 'administrator') {
 						availableGroups.push(group);
 					} else {
-						// Обновляем статус группы в БД
 						await prisma.group.update({
 							where: { id: group.id },
 							data: { isActive: false }
@@ -205,7 +201,6 @@ async function loadAndShowAvailableGroups(bot, chatId, userId) {
 				}
 			} catch (error) {
 				console.error(`Error checking access to group ${group.telegramId}:`, error);
-				// Если не можем получить информацию о группе, возможно бот был удален
 				await prisma.group.update({
 					where: { id: group.id },
 					data: { isActive: false }
@@ -213,15 +208,19 @@ async function loadAndShowAvailableGroups(bot, chatId, userId) {
 			}
 		}
 		
+		// Удаляем сообщение о проверке
+		await bot.deleteMessage(chatId, processingMessage.message_id);
+		
 		if (availableGroups.length === 0) {
 			userStates.set(userId, ADMIN_STATES.IDLE);
 			gameData.delete(userId);
 			return bot.sendMessage(chatId,
-				"❌ Нет групп, где вы являетесь участником и бот является администратором.\n\n" +
-				"Для создания игры:\n" +
-				"1. Присоединитесь к группе\n" +
-				"2. Убедитесь, что бот добавлен в группу как администратор\n" +
-				"3. Попробуйте создать игру снова"
+				"❌ <b>Нет подходящих групп</b>\n\n" +
+				"📋 Требования:\n" +
+				"✅ Вы должны быть участником группы\n" +
+				"✅ Бот должен быть администратором группы\n\n" +
+				"🔧 Проверьте настройки и попробуйте снова",
+				{ parse_mode: 'HTML' }
 			);
 		}
 		
@@ -230,18 +229,23 @@ async function loadAndShowAvailableGroups(bot, chatId, userId) {
 		currentGame.availableGroups = availableGroups;
 		gameData.set(userId, currentGame);
 		
-		// Формируем сообщение со списком групп
-		let message = "1️⃣ Выберите группу для игры:\n\n";
+		// Формируем красивое сообщение со списком групп
+		let message = "🏟️ <b>Выберите группу для игры:</b>\n\n";
 		
 		availableGroups.forEach((group, index) => {
-			const groupInfo = group.username ? `@${group.username}` : `ID: ${group.telegramId}`;
-			message += `${index + 1}. **${group.title}**\n   ${groupInfo}\n\n`;
+			const number = `${index + 1}️⃣`;
+			const groupType = group.type === 'supergroup' ? '🏆' : '👥';
+			const username = group.username ? `@${group.username}` : '🆔 ' + group.telegramId;
+			
+			message += `${number} ${groupType} <b>${group.title}</b>\n`;
+			message += `   📝 ${username}\n\n`;
 		});
 		
-		message += "💡 Введите номер группы из списка (например: 1)\n\n";
-		message += "Для отмены используйте /cancel";
+		message += `💡 <b>Как выбрать:</b>\n`;
+		message += `🔢 Введите номер группы (например: <code>1</code>)\n\n`;
+		message += `❌ Для отмены используйте /cancel`;
 		
-		await bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+		await bot.sendMessage(chatId, message, { parse_mode: 'HTML' });
 		
 	} catch (error) {
 		console.error('Error loading available groups:', error);
@@ -553,13 +557,15 @@ async function createGamePollMessage(game) {
 
 async function showUserGames(bot, chatId, userId) {
 	try {
-		// Находим админа по telegramId
 		const admin = await prisma.admin.findUnique({
 			where: { telegramId: userId.toString() }
 		});
 		
 		if (!admin) {
-			return bot.sendMessage(chatId, "📝 У вас пока нет игр. Создайте первую игру командой /create_game");
+			return bot.sendMessage(chatId,
+				"📝 У вас пока нет игр.\n" +
+				"🎯 Создайте первую игру командой /create_game"
+			);
 		}
 		
 		const games = await prisma.game.findMany({
@@ -567,21 +573,82 @@ async function showUserGames(bot, chatId, userId) {
 				adminId: admin.id,
 				status: 'ACTIVE'
 			},
+			include: {
+				group: true,
+				participants: true,
+			},
 			orderBy: { date: 'asc' }
 		});
 		
 		if (games.length === 0) {
-			return bot.sendMessage(chatId, "📝 У вас пока нет активных игр.");
+			return bot.sendMessage(chatId,
+				"📋 У вас пока нет активных игр.\n" +
+				"⚽ Создайте новую игру командой /create_game"
+			);
 		}
 		
-		let message = "📋 Ваши активные игры:\n\n";
+		let message = "🏆 <b>Ваши активные игры:</b>\n\n";
+		
 		games.forEach((game, index) => {
-			message += `${index + 1}. 📅 ${game.date.toLocaleDateString('ru-RU')}\n`;
-			message += `   📍 ${game.location}\n`;
-			message += `   👥 ${game.playersCount} игроков\n\n`;
+			const goingCount = game.participants.filter(p => p.status === 'GOING').length;
+			const maybeCount = game.participants.filter(p => p.status === 'MAYBE').length;
+			const notGoingCount = game.participants.filter(p => p.status === 'NOT_GOING').length;
+			
+			const gameDate = game.date.toLocaleDateString('ru-RU', {
+				day: '2-digit',
+				month: '2-digit',
+				year: 'numeric'
+			});
+			const gameTime = game.date.toLocaleTimeString('ru-RU', {
+				hour: '2-digit',
+				minute: '2-digit'
+			});
+			
+			// Статус набора
+			let statusEmoji = "⏳";
+			let statusText = "Набор открыт";
+			if (goingCount >= game.playersCount) {
+				statusEmoji = "✅";
+				statusText = "Набор завершен";
+			} else if (goingCount === 0) {
+				statusEmoji = "🔴";
+				statusText = "Пока никого нет";
+			}
+			
+			message += `${statusEmoji} <b>Игра #${index + 1}</b>\n`;
+			message += `📅 ${gameDate} в ${gameTime}\n`;
+			message += `📍 ${game.location}\n`;
+			message += `🏟️ ${game.group.title}\n`;
+			message += `👥 ${goingCount}/${game.playersCount} игроков\n`;
+			
+			if (maybeCount > 0 || notGoingCount > 0) {
+				message += `📊 ✅${goingCount} 🤔${maybeCount} ❌${notGoingCount}\n`;
+			}
+			
+			message += `🔰 ${statusText}\n`;
+			
+			// Список участников
+			if (goingCount > 0) {
+				const goingPlayers = game.participants
+					.filter(p => p.status === 'GOING')
+					.slice(0, 5) // Показываем максимум 5
+					.map(p => p.firstName || p.username || 'Аноним')
+					.join(', ');
+				
+				message += `✅ Идут: ${goingPlayers}`;
+				if (goingCount > 5) {
+					message += ` и еще ${goingCount - 5}`;
+				}
+				message += `\n`;
+			}
+			
+			message += `\n`;
 		});
 		
-		bot.sendMessage(chatId, message);
+		message += `📱 Используйте /create_game для создания новой игры`;
+		
+		bot.sendMessage(chatId, message, { parse_mode: 'HTML' });
+		
 	} catch (error) {
 		console.error('Error fetching user games:', error);
 		bot.sendMessage(chatId, "❌ Ошибка при получении списка игр.");
@@ -604,11 +671,52 @@ async function showHelp(bot, chatId) {
 	bot.sendMessage(chatId, helpText);
 }
 
+async function getAdminGamesCount(adminId) {
+	try {
+		const admin = await prisma.admin.findUnique({
+			where: { telegramId: adminId.toString() },
+			include: {
+				_count: {
+					select: { games: true }
+				}
+			}
+		});
+		
+		return admin?._count?.games || 0;
+	} catch (error) {
+		console.error('Error getting admin games count:', error);
+		return 0;
+	}
+}
+
+// 5) Функция для получения статистики участника
+async function getParticipantStats(telegramId) {
+	try {
+		const participantStats = await prisma.participant.groupBy({
+			by: ['status'],
+			where: { telegramId: telegramId.toString() },
+			_count: {
+				id: true
+			}
+		});
+		
+		return participantStats.reduce((acc, stat) => {
+			acc[stat.status] = stat._count.id;
+			return acc;
+		}, { GOING: 0, NOT_GOING: 0, MAYBE: 0 });
+	} catch (error) {
+		console.error('Error getting participant stats:', error);
+		return { GOING: 0, NOT_GOING: 0, MAYBE: 0 };
+	}
+}
+
 
 module.exports = {
 	handleAdminScenario,
 	ADMIN_STATES,
 	userStates,
 	gameData,
-	createGamePollMessage
+	createGamePollMessage,
+	getAdminGamesCount,
+	getParticipantStats
 };

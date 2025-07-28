@@ -9,50 +9,80 @@ const handleCallbackQuery = async (bot, callbackQuery) => {
 		const username = callbackQuery.from.username;
 		const firstName = callbackQuery.from.first_name;
 		const lastName = callbackQuery.from.last_name;
-		const messageId = callbackQuery.message.message_id;
 		const chatId = callbackQuery.message.chat.id;
 		
-		// Парсим callback data: game_123_going
 		const match = data.match(/^game_(\d+)_(.+)$/);
 		if (!match) {
-			return bot.answerCallbackQuery(callbackQuery.id, { text: "Неверная команда" });
+			return bot.answerCallbackQuery(callbackQuery.id, { text: "❌ Неверная команда" });
 		}
 		
 		const gameId = parseInt(match[1]);
 		const action = match[2];
 		
-		// Проверяем, существует ли игра
+		// 5) Проверяем существование игры с детальной проверкой
 		const game = await prisma.game.findUnique({
-			where: { id: gameId }
+			where: { id: gameId },
+			include: {
+				admin: true,
+				group: true,
+				participants: true
+			}
 		});
 		
-		if (!game || game.status !== 'ACTIVE') {
+		if (!game) {
 			return bot.answerCallbackQuery(callbackQuery.id, {
-				text: "Игра не найдена или завершена"
+				text: "❌ Игра не найдена"
+			});
+		}
+		
+		if (game.status !== 'ACTIVE') {
+			return bot.answerCallbackQuery(callbackQuery.id, {
+				text: "🔒 Эта игра уже завершена"
 			});
 		}
 		
 		// Определяем статус
-		let status;
-		let statusText;
+		let status, statusText, statusEmoji;
 		switch (action) {
 			case 'going':
 				status = 'GOING';
 				statusText = 'записались на игру';
+				statusEmoji = '✅';
 				break;
 			case 'not_going':
 				status = 'NOT_GOING';
 				statusText = 'отказались от игры';
+				statusEmoji = '❌';
 				break;
 			case 'maybe':
 				status = 'MAYBE';
 				statusText = 'возможно придете';
+				statusEmoji = '🤔';
 				break;
 			default:
-				return bot.answerCallbackQuery(callbackQuery.id, { text: "Неверное действие" });
+				return bot.answerCallbackQuery(callbackQuery.id, { text: "❌ Неверное действие" });
 		}
 		
-		// Создаем или обновляем участника
+		// 5) Улучшенная логика создания/обновления участника
+		const existingParticipant = await prisma.participant.findUnique({
+			where: {
+				gameId_telegramId: {
+					gameId: gameId,
+					telegramId: userId.toString()
+				}
+			}
+		});
+		
+		let isNewParticipant = !existingParticipant;
+		let oldStatus = existingParticipant?.status;
+		
+		// Если статус не изменился, не делаем ничего
+		if (existingParticipant && existingParticipant.status === status) {
+			return bot.answerCallbackQuery(callbackQuery.id, {
+				text: `${statusEmoji} Вы уже ${statusText}!`
+			});
+		}
+		
 		const participant = await prisma.participant.upsert({
 			where: {
 				gameId_telegramId: {
@@ -77,7 +107,7 @@ const handleCallbackQuery = async (bot, callbackQuery) => {
 			}
 		});
 		
-		// Обновляем сообщение с новым списком участников
+		// 2) Отправляем НОВОЕ сообщение вместо редактирования старого
 		const updatedMessage = await createGamePollMessage(game);
 		
 		const keyboard = {
@@ -92,25 +122,32 @@ const handleCallbackQuery = async (bot, callbackQuery) => {
 			]
 		};
 		
-		await bot.editMessageText(updatedMessage, {
-			chat_id: chatId,
-			message_id: messageId,
+		// Отправляем новое сообщение
+		await bot.sendMessage(chatId, updatedMessage, {
 			reply_markup: keyboard,
 			parse_mode: 'HTML'
 		});
 		
-		// Отвечаем пользователю
+		// Формируем текст уведомления
+		let notificationText = `${statusEmoji} Вы ${statusText}!`;
+		if (!isNewParticipant && oldStatus) {
+			const oldEmoji = oldStatus === 'GOING' ? '✅' : oldStatus === 'NOT_GOING' ? '❌' : '🤔';
+			notificationText = `🔄 Изменили статус с ${oldEmoji} на ${statusEmoji}`;
+		}
+		
 		await bot.answerCallbackQuery(callbackQuery.id, {
-			text: `✅ Вы ${statusText}!`,
+			text: notificationText,
 			show_alert: false
 		});
 		
-		console.log(`Participant ${username} (${userId}) ${status} for game ${gameId}`);
+		// Логирование
+		const actionLog = isNewParticipant ? 'registered' : `changed from ${oldStatus} to ${status}`;
+		console.log(`Participant ${username} (${userId}) ${actionLog} for game ${gameId}`);
 		
 	} catch (error) {
 		console.error('Error handling callback query:', error);
 		bot.answerCallbackQuery(callbackQuery.id, {
-			text: "Произошла ошибка. Попробуйте позже."
+			text: "💥 Произошла ошибка. Попробуйте позже."
 		});
 	}
 };
