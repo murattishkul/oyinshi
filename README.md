@@ -49,7 +49,7 @@ Oyinshi Bot — это Telegram бот, который упрощает орга
    Заполните `.env` файл:
    ```env
    TELEGRAM_BOT_TOKEN=your_bot_token_here
-   DATABASE_URL="postgresql://user:password@localhost:5432/football_bot"
+   DATABASE_URL="postgresql://user:password@localhost:5432/oyinshi_bot"
    PORT=3000
    WEBHOOK_URL=https://your-domain.com
    ```
@@ -148,7 +148,7 @@ src/
 
 ### Heroku
 ```bash
-heroku create your-football-bot
+heroku create your-oyinshi-bot
 heroku config:set TELEGRAM_BOT_TOKEN=your_token
 heroku config:set DATABASE_URL=your_database_url
 git push heroku main
@@ -156,8 +156,8 @@ git push heroku main
 
 ### Docker
 ```bash
-docker build -t football-bot .
-docker run -p 3000:3000 --env-file .env football-bot
+docker build -t oyinshi-bot .
+docker run -p 3000:3000 --env-file .env oyinshi-bot
 ```
 
 ### PM2 (Production)
@@ -201,7 +201,7 @@ pm2 startup
 
 - 🐛 **Баги**: [GitHub Issues](https://github.com/murattishkul/oyinshi/issues)
 - 💡 **Предложения**: [GitHub Discussions](https://github.com/murattishkul/oyinshi/discussions)
-- 📧 **Email**: your.email@example.com
+- 📧 **Email**: murat.tishkul@gmail.com
 
 ## 📄 Лицензия
 
