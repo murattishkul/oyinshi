@@ -45,7 +45,19 @@ fi
 
 # Создание необходимых директорий
 print_status "Создание директорий..."
-mkdir -p logs backups nginx/logs nginx/ssl
+mkdir -p logs backups
+
+# Создание nginx директорий только если nginx включен в compose
+if grep -q "container_name: oyinshi_nginx" docker-compose.yml && ! grep -q "# *nginx:" docker-compose.yml; then
+    print_status "Создание директорий для Nginx..."
+    mkdir -p nginx/logs nginx/ssl
+
+    # Создание базового nginx.conf если не существует
+    if [ ! -f nginx/nginx.conf ]; then
+        print_warning "Создание базового nginx.conf..."
+        # Здесь можно добавить создание базового конфига
+    fi
+fi
 
 # Остановка и удаление старых контейнеров
 print_status "Остановка старых контейнеров..."
