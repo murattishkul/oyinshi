@@ -49,6 +49,9 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    env_file:
+      - .env
+    command: sh -c "sleep 10 && npx prisma db push && npm start"
 
   # Nginx (опционально, для SSL и проксирования)
 #  nginx:

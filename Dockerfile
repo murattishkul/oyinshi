@@ -7,6 +7,12 @@ RUN apk add --no-cache \
     curl \
     && rm -rf /var/cache/apk/*
 
+# Установка OpenSSL для Alpine
+RUN apk add --no-cache \
+    openssl \
+    openssl-dev \
+    libc6-compat
+
 # Создание пользователя приложения
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S oyinshi -u 1001
