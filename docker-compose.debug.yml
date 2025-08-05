@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: oyinshi_postgres_debug
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: oyinshi
+      POSTGRES_USER: oyinshi_user
+      POSTGRES_PASSWORD: your_secure_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U oyinshi_user -d oyinshi"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  app:
+    build: .
+    container_name: oyinshi_bot_debug
+    restart: "no"  # Отключаем автоперезапуск для отладки
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=development  # Включаем отладку
+      - DEBUG=*
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - DATABASE_URL=postgresql://oyinshi_user:your_secure_password@postgres:5432/oyinshi?schema=public
+      - PORT=3000
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./logs:/app/logs
+      - .:/app  # Для разработки
+    command: ["sh", "-c", "echo 'Waiting for DB...' && sleep 10 && npx prisma migrate deploy && npm start"]
+
+volumes:
+  postgres_data:

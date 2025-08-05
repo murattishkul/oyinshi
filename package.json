@@ -4,7 +4,7 @@
   "main": "index.js",
   "description": "Telegram bot for organizing football games",
   "scripts": {
-    "start": "node app.js",
+    "start": "node index.js",
     "dev": "nodemon index.js",
     "test": "jest --detectOpenHandles --forceExit",
     "test:watch": "jest --watch",
