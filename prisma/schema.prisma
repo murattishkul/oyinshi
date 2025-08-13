@@ -53,6 +53,9 @@ model Participant {
   createdAt  DateTime          @default(now())
   updatedAt  DateTime          @updatedAt
 
+  isAddedByUser Boolean @default(false)
+  addedByUserId String?
+
   game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
 
   // Ensure one user can only participate once per game
