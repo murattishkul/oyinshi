@@ -56,6 +56,12 @@ app.listen(port, () => {
   console.log(`Server is running on port ${port}`)
 })
 
+// Обработка команды /start
+bot.onText(/\/start/, (msg) => {
+	const chatId = msg.chat.id
+	bot.sendMessage(chatId, 'Привет! Я ваш новый Telegram-бот.')
+})
+
 // Слушаем сообщения
 bot.on('message', async (msg) => {
   try {
@@ -72,12 +78,6 @@ bot.on('message', async (msg) => {
 // Обработка изменений статуса бота
 bot.on('my_chat_member', async (update) => {
   await handleBotStatusChange(bot, update)
-})
-
-// Обработка команды /start
-bot.onText(/\/start/, (msg) => {
-  const chatId = msg.chat.id
-  bot.sendMessage(chatId, 'Привет! Я ваш новый Telegram-бот.')
 })
 
 setupBotHandlers(bot)
