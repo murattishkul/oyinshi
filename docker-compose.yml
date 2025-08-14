@@ -53,7 +53,6 @@ services:
       - .env
     command: sh -c "npm start"
 
-
   # Nginx (опционально, для SSL и проксирования)
 #  nginx:
 #    image: nginx:alpine
