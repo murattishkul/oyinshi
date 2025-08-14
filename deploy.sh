@@ -102,8 +102,12 @@ done
 
 # Запуск миграций
 print_status "Применение миграций базы данных..."
-docker-compose exec -T app npx prisma migrate deploy
-
+if ! docker-compose exec -T app npx prisma migrate deploy; then
+    print_warning "P3005: база не пустая — выполняем baseline..."
+    FIRST_MIGRATION=$(docker-compose exec -T app ls -1 prisma/migrations | head -n 1 | tr -d '\r')
+    docker-compose exec -T app npx prisma migrate resolve --applied "$FIRST_MIGRATION"
+    docker-compose exec -T app npx prisma migrate deploy
+fi
 # Генерация Prisma Client (на всякий случай)
 print_status "Генерация Prisma Client..."
 docker-compose exec -T app npx prisma generate
