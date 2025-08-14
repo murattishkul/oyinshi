@@ -179,11 +179,10 @@ const handleParticipantStatus = async (
 		// Создаем обновленную клавиатуру с кнопкой удаления друга (если есть добавленные друзья)
 		const keyboard = await createGameKeyboard(gameId, userId)
 		
-		await bot.editMessageText(updatedMessage, {
-			chat_id: chatId,
-			message_id: messageId,
-			parse_mode: 'HTML',
-			reply_markup: keyboard
+		// Отправляем новое сообщение
+		await bot.sendMessage(chatId, updatedMessage, {
+			reply_markup: keyboard,
+			parse_mode: 'HTML'
 		})
 		
 		// Отправляем подтверждение пользователю (БЕЗ отправки сообщения в чат)
@@ -244,11 +243,10 @@ const handleAddFriend = async (bot, callbackQuery, gameId, userId, firstName, us
 		const updatedMessage = await createGamePollMessage(game)
 		const keyboard = await createGameKeyboard(gameId, userId)
 		
-		await bot.editMessageText(updatedMessage, {
-			chat_id: callbackQuery.message.chat.id,
-			message_id: callbackQuery.message.message_id,
-			parse_mode: 'HTML',
-			reply_markup: keyboard
+		// Отправляем новое сообщение
+		await bot.sendMessage(callbackQuery.message.chat.id, updatedMessage, {
+			reply_markup: keyboard,
+			parse_mode: 'HTML'
 		})
 		
 		bot.answerCallbackQuery(callbackQuery.id, {
@@ -296,11 +294,10 @@ const handleRemoveFriend = async (bot, callbackQuery, gameId, userId) => {
 		const updatedMessage = await createGamePollMessage(game)
 		const keyboard = await createGameKeyboard(gameId, userId)
 		
-		await bot.editMessageText(updatedMessage, {
-			chat_id: callbackQuery.message.chat.id,
-			message_id: callbackQuery.message.message_id,
-			parse_mode: 'HTML',
-			reply_markup: keyboard
+		// Отправляем новое сообщение
+		await bot.sendMessage(callbackQuery.message.chat.id, updatedMessage, {
+			reply_markup: keyboard,
+			parse_mode: 'HTML'
 		})
 		
 		bot.answerCallbackQuery(callbackQuery.id, {
