@@ -1,55 +1,55 @@
 # ⚽ Oyinshi Bot
 
-> Telegram бот для организации футбольных матчей в группах
+> Telegram bot for organizing football matches in group chats
 
 [![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
 [![Prisma](https://img.shields.io/badge/Prisma-5.0+-blue.svg)](https://www.prisma.io/)
 [![Telegram Bot API](https://img.shields.io/badge/Telegram_Bot_API-Latest-blue.svg)](https://core.telegram.org/bots/api)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## 📖 Описание
+## 📖 Description
 
-Oyinshi Bot — это Telegram бот, который упрощает организацию футбольных игр в групповых чатах. Администраторы могут создавать игры с указанием даты, времени, места и количества игроков, а участники группы могут легко записываться на игру с помощью интерактивных кнопок.
+Oyinshi Bot is a Telegram bot that simplifies organizing football games in group chats. Administrators can create matches by specifying the date, time, location, and number of players, while group members can easily join games using interactive buttons.
 
-### ✨ Основные возможности
+### ✨ Key Features
 
-- 🎯 **Создание игр** - Простое создание футбольных матчей с полной информацией
-- 👥 **Управление участниками** - Автоматический подсчет записавшихся игроков
-- 📊 **Статистика** - Личная статистика участников и администраторов
-- 🏆 **Система рейтингов** - Звания для активных игроков
-- 💬 **Интерактивные опросы** - Удобные кнопки для записи на игру
-- 🔒 **Контроль доступа** - Только администраторы групп могут создавать игры
+- 🎯 **Game Creation** - Easily create football matches with complete details
+- 👥 **Participant Management** - Automatic tracking of registered players
+- 📊 **Statistics** - Personal stats for participants and administrators
+- 🏆 **Ranking System** - Titles and ranks for active players
+- 💬 **Interactive Polls** - Convenient buttons for joining games
+- 🔒 **Access Control** - Only group admins can create games
 
-## 🚀 Быстрый старт
+## 🚀 Quick Start
 
-### Предварительные требования
+### Prerequisites
 
 - Node.js 18.0+
-- PostgreSQL или любая другая БД, поддерживаемая Prisma
-- Telegram Bot Token (получить у [@BotFather](https://t.me/botfather))
+- PostgreSQL or any other database supported by Prisma
+- Telegram Bot Token (get it from [@BotFather](https://t.me/botfather))
 
-### Установка
+### Installation
 
-1. **Клонируйте репозиторий**
+1. **Clone the repository**
 
    ```bash
    git clone https://github.com/murattishkul/oyinshi.git
    cd oyinshi
    ```
 
-2. **Установите зависимости**
+2. **Install dependencies**
 
    ```bash
    npm install
    ```
 
-3. **Настройте переменные окружения**
+3. **Configure environment variables**
 
    ```bash
    cp .env.example .env
    ```
 
-   Заполните `.env` файл:
+   Fill in the `.env` file:
 
    ```env
    TELEGRAM_BOT_TOKEN=your_bot_token_here
@@ -58,100 +58,101 @@ Oyinshi Bot — это Telegram бот, который упрощает орга
    WEBHOOK_URL=https://your-domain.com
    ```
 
-4. **Настройте базу данных**
+4. **Set up the database**
 
    ```bash
    npx prisma migrate dev
    npx prisma generate
    ```
 
-5. **Запустите бота**
+5. **Start the bot**
+
    ```bash
    npm start
    ```
 
-## 🎮 Как использовать
+## 🎮 How to Use
 
-### Для администраторов групп
+### For Group Administrators
 
-1. **Добавьте бота в группу** как администратора
-2. **Создайте игру** командой `/create_game` в личном чате с ботом
-3. **Настройте параметры игры:**
-   - 📅 Дата и время
-   - 📍 Место проведения
-   - 👥 Количество игроков
-4. **Запустите опрос** в выбранной группе
+1. **Add the bot to a group** as an administrator
+2. **Create a game** using the `/create_game` command in a private chat with the bot
+3. **Configure game settings:**
+   - 📅 Date and time
+   - 📍 Location
+   - 👥 Number of players
+4. **Launch the poll** in the selected group
 
-### Для участников
+### For Participants
 
-1. **Найдите опрос** в групповом чате
-2. **Нажмите кнопку:**
-   - ✅ **Иду** - записаться на игру
-   - ❌ **Не иду** - отказаться от участия
-   - 🤔 **Возможно** - под вопросом
-3. **Следите за обновлениями** статистики в реальном времени
+1. **Find the poll** in the group chat
+2. **Click a button:**
+   - ✅ **Going** - join the game
+   - ❌ **Not Going** - decline participation
+   - 🤔 **Maybe** - unsure
+3. **Track live updates** of participant statistics in real time
 
-## 📋 Команды бота
+## 📋 Bot Commands
 
-### Личный чат (для администраторов)
+### Private Chat (for administrators)
 
-- `/start` - Главное меню и статистика
-- `/create_game` - Создать новую игру
-- `/my_games` - Посмотреть созданные игры
-- `/profile` - Личная статистика участия
-- `/stats` - Статистика администратора
-- `/help` - Справка по командам
+- `/start` - Main menu and statistics
+- `/create_game` - Create a new game
+- `/my_games` - View created games
+- `/profile` - Personal participation statistics
+- `/stats` - Administrator statistics
+- `/help` - Command reference
 
-### Групповой чат
+### Group Chat
 
-- Бот автоматически обрабатывает нажатия на кнопки опросов
-- Обновляет статистику участников в реальном времени
+- The bot automatically processes poll button interactions
+- Updates participant statistics in real time
 
-## 🏆 Система рейтингов
+## 🏆 Ranking System
 
-Участники получают звания на основе количества игр:
+Participants receive titles based on the number of games played:
 
-- 🌱 **Начинающий** - 1+ игр
-- ⚽ **Активный игрок** - 5+ игр
-- ⭐ **Звезда команды** - 10+ игр
-- 🏆 **Легенда поля** - 20+ игр
+- 🌱 **Beginner** - 1+ games
+- ⚽ **Active Player** - 5+ games
+- ⭐ **Team Star** - 10+ games
+- 🏆 **Field Legend** - 20+ games
 
-## 🔧 Архитектура
+## 🔧 Architecture
 
-```
+```text
 src/
 ├── scenarios/
-│   ├── admin/           # Логика для администраторов
-│   ├── group/           # Логика для групп
-│   └── init/            # Инициализация и обработчики
-├── utils/               # Вспомогательные функции
+│   ├── admin/           # Administrator logic
+│   ├── group/           # Group logic
+│   └── init/            # Initialization and handlers
+├── utils/               # Utility functions
 └── db/
-    └── prisma/          # Схема и конфигурация БД
+    └── prisma/          # Database schema and configuration
 ```
 
-### Основные компоненты
+### Main Components
 
-- **Admin Scenarios** - Создание игр, управление, статистика
-- **Group Scenarios** - Обработка участия в играх
-- **Database Layer** - Prisma ORM для работы с БД
-- **Bot Handlers** - Обработчики событий Telegram
+- **Admin Scenarios** - Game creation, management, and statistics
+- **Group Scenarios** - Handling game participation
+- **Database Layer** - Prisma ORM for database operations
+- **Bot Handlers** - Telegram event handlers
 
 ## 🛠 API Endpoints
 
-При использовании webhook режима:
+When using webhook mode:
 
-- `POST /webhook` - Обработка обновлений от Telegram
+- `POST /webhook` - Handle Telegram updates
 
-## 📊 База данных
+## 📊 Database
 
-### Основные таблицы
+### Main Tables
 
-- **Admin** - Администраторы, создающие игры
-- **Group** - Telegram группы с активным ботом
-- **Game** - Созданные игры
-- **Participant** - Участники игр
+- **Admin** - Administrators who create games
+- **Group** - Telegram groups with the active bot
+- **Game** - Created games
+- **Participant** - Game participants
 
-## 🚀 Развертывание
+## 🚀 Deployment
 
 ### Heroku
 
@@ -178,58 +179,58 @@ pm2 save
 pm2 startup
 ```
 
-## 🤝 Вклад в проект
+## 🤝 Contributing
 
-1. Fork репозиторий
-2. Создайте feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit изменения (`git commit -m 'Add amazing feature'`)
-4. Push в branch (`git push origin feature/amazing-feature`)
-5. Откройте Pull Request
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-## ⚠️ Требования к окружению
+## ⚠️ Environment Requirements
 
-- **Node.js** 18.0 или выше
-- **PostgreSQL** 13+ (или другая БД через Prisma)
+- **Node.js** 18.0 or higher
+- **PostgreSQL** 13+ (or another database supported by Prisma)
 - **Telegram Bot Token**
-- **HTTPS** для webhook (в продакшене)
+- **HTTPS** for webhooks (in production)
 
 ## 📝 Changelog
 
 ### v1.0.0
 
-- ✅ Базовая функциональность создания игр
-- ✅ Интерактивные опросы с кнопками
-- ✅ Статистика участников и администраторов
-- ✅ Система рейтингов
-- ✅ Поддержка множественных групп
+- ✅ Core game creation functionality
+- ✅ Interactive polls with buttons
+- ✅ Participant and administrator statistics
+- ✅ Ranking system
+- ✅ Multiple group support
 
-## 🐛 Известные проблемы
+## 🐛 Known Issues
 
-- При большом количестве участников сообщение может стать слишком длинным
-- Webhook требует HTTPS соединения
+- Messages may become too long with a large number of participants
+- Webhooks require an HTTPS connection
 
-## 📞 Поддержка
+## 📞 Support
 
-- 🐛 **Баги**: [GitHub Issues](https://github.com/murattishkul/oyinshi/issues)
-- 💡 **Предложения**: [GitHub Discussions](https://github.com/murattishkul/oyinshi/discussions)
+- 🐛 **Bugs**: [GitHub Issues](https://github.com/murattishkul/oyinshi/issues)
+- 💡 **Suggestions**: [GitHub Discussions](https://github.com/murattishkul/oyinshi/discussions)
 - 📧 **Email**: murat.tishkul@gmail.com
 
-## 📄 Лицензия
+## 📄 License
 
-Этот проект лицензирован под MIT License - смотрите [LICENSE](LICENSE) файл для деталей.
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Благодарности
+## 🙏 Acknowledgements
 
-- [node-telegram-bot-api](https://github.com/yagop/node-telegram-bot-api) - Telegram Bot API для Node.js
-- [Prisma](https://www.prisma.io/) - Современная ORM для Node.js
-- [Express.js](https://expressjs.com/) - Веб фреймворк для Node.js
+- [node-telegram-bot-api](https://github.com/yagop/node-telegram-bot-api) - Telegram Bot API for Node.js
+- [Prisma](https://www.prisma.io/) - Modern ORM for Node.js
+- [Express.js](https://expressjs.com/) - Web framework for Node.js
 
 ---
 
 <div align="center">
 
-**⚽ Сделано с ❤️ для футбольного сообщества Mrazi**
+**⚽ Made with ❤️ for the Mrazi football community**
 
-[Демо](https://t.me/oyinshi_bot) • [Документация](https://github.com/murattishkul/oyinshi/wiki) • [Поддержка](mailto:murat.tishkul@gmail.com)
+[Demo](https://t.me/oyinshi_bot) • [Documentation](https://github.com/murattishkul/oyinshi/wiki) • [Support](mailto:murat.tishkul@gmail.com)
 
 </div>
